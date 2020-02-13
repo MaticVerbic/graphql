@@ -8,8 +8,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-// MarshalIndent ...
-func MarshalIndent(source interface{}, prefix, indent string) ([]byte, error) {
+type opt struct{ prefix, indent string }
+
+func (o opt) validate() error {
+	if o.indent != "" && !strings.ContainsAny(o.indent, " ") {
+		return errors.New("non whitespace char in 'indent' arg")
+	}
+
+	if o.prefix != "" && !strings.ContainsAny(o.prefix, " ") {
+		return errors.New("non whitespace char in 'prefix' arg")
+	}
+
+	return nil
+}
+
+func marshal(source interface{}, o opt) ([]byte, error) {
 	if source == nil {
 		return nil, errors.New("source is nil interface")
 	}
