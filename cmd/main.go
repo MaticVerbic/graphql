@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"graphql/graphql"
+
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // Foo ...
@@ -12,9 +15,14 @@ type Foo struct {
 }
 
 func main() {
-	marshalled, err := graphql.MarshalIndent(&Foo{Foo: "", Bar: ""}, "", "")
+	f := Foo{
+		Foo: "test_foo",
+		Bar: "test_bar",
+	}
+
+	marshalled, err := graphql.MarshalIndent(&f, "", "")
 	if err != nil {
-		panic(err)
+		log.Fatal(errors.Wrap(err, "failed to marshal gql"))
 	}
 
 	fmt.Println(string(marshalled))
