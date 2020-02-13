@@ -37,9 +37,11 @@ func handleStruct(s interface{}, tagname string) ([]byte, error) {
 
 	querySkeleton := `
 query {
-  %s() {%s	
+  %s%s {%s
   }
 }`
+
+	args := ""
 	str := ""
 	for i := 0; i < v.NumField(); i++ {
 		ft := t.Field(i)
@@ -47,7 +49,7 @@ query {
 		tag := ft.Tag.Get(tagname)
 		spl := strings.Split(tag, ",")
 		if len(spl) != 2 {
-			return []byte{}, errors.New("invalid separator count")
+			return nil, errors.New("invalid separator count")
 		}
 
 		if spl[1] != "out" {
@@ -57,5 +59,5 @@ query {
 		str += "\n" + fmt.Sprintf(`%8s`, spl[0])
 	}
 
-	return []byte(fmt.Sprintf(querySkeleton, t.Name(), str)), nil
+	return []byte(fmt.Sprintf(querySkeleton, strings.ToLower(t.Name()), args, str)), nil
 }
