@@ -1,3 +1,3 @@
-# graphql-client
+# graphql
 
 Package that offers simple support for marshalling go datatypes into GraphQL requests.
