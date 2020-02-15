@@ -50,7 +50,7 @@ func handleStruct(s interface{}, tagname string, c *config) (string, error) {
 	for i := 0; i < v.NumField(); i++ {
 		ft := t.Field(i)
 		if ft.Name == gqlType {
-			gt := Type(reflect.Indirect(reflect.ValueOf(s)).FieldByName(gqlType).String())
+			gt := Type(v.FieldByName(gqlType).String())
 			if !gt.isValid() {
 				return "", fmt.Errorf("invalid value for %q", gqlType)
 			}
