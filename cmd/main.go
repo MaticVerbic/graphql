@@ -20,7 +20,7 @@ func main() {
 		Bar: "test_bar",
 	}
 
-	marshalled, err := graphql.MarshalIndent(&f, "", "")
+	marshalled, err := graphql.MarshalIndent(&f, "", "", graphql.TagNameInject("abc"))
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to marshal gql"))
 	}

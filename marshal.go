@@ -8,9 +8,39 @@ import (
 	"github.com/pkg/errors"
 )
 
-type config struct{ prefix, indent string }
+// Opt is an option func.
+type Opt func(c *config)
 
-func (c config) validate() error {
+// TagNameInject injects a custom tag
+func TagNameInject(tagname string) Opt {
+	return func(c *config) {
+		c.tagname = tagname
+	}
+}
+
+type config struct{ tagname, prefix, indent string }
+
+func newConfig(opts ...Opt) *config {
+	const (
+		defaultPrefix = ""
+		defaultIndent = "  "
+		defaultTag    = "gql"
+	)
+
+	c := &config{
+		tagname: defaultTag,
+		prefix:  defaultPrefix,
+		indent:  defaultIndent,
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
+}
+
+func (c *config) validate() error {
 	if c.indent != "" && !strings.ContainsAny(c.indent, " ") {
 		return errors.New("non whitespace char in 'indent' arg")
 	}
@@ -22,7 +52,7 @@ func (c config) validate() error {
 	return nil
 }
 
-func marshal(source interface{}, c config) ([]byte, error) {
+func marshal(source interface{}, c *config) ([]byte, error) {
 	if source == nil {
 		return nil, errors.New("source is nil interface")
 	}
@@ -32,7 +62,7 @@ func marshal(source interface{}, c config) ([]byte, error) {
 
 	switch t.Kind() {
 	case reflect.Struct:
-		return handleStruct(source, "gql")
+		return handleStruct(source, c.tagname)
 	case reflect.Map:
 		break
 	default:
