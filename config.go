@@ -16,17 +16,24 @@ func TagNameInject(tagname string) Opt {
 	}
 }
 
-type config struct{ tagname, prefix, indent string }
+type config struct {
+	tagname     string
+	prefix      string
+	indent      string
+	requestName string
+}
 
 func newConfig(prefix, indent string, opts ...Opt) (*config, error) {
 	const (
-		defaultTag = "gql"
+		defaultTag         = "gql"
+		defaultRequestName = "query"
 	)
 
 	c := &config{
-		tagname: defaultTag,
-		prefix:  prefix,
-		indent:  indent,
+		tagname:     defaultTag,
+		prefix:      prefix,
+		indent:      indent,
+		requestName: defaultRequestName,
 	}
 
 	if err := c.validate(); err != nil {

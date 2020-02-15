@@ -16,31 +16,35 @@ func marshal(source interface{}, c *config) ([]byte, error) {
 	v := reflect.Indirect(reflect.ValueOf(source))
 	t := reflect.TypeOf(v)
 
+	querySkeleton := `
+%s {
+  %s {%s
+  }
+}`
+
+	var queryBody string
+	var err error
 	switch t.Kind() {
 	case reflect.Struct:
-		return handleStruct(source, c.tagname)
+		queryBody, err = handleStruct(source, c.tagname)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to handle a struct")
+		}
 	case reflect.Map:
 		break
 	default:
 		return nil, errors.New("invalid source type")
 	}
 
-	return nil, nil
+	return []byte(fmt.Sprintf(querySkeleton, strings.ToLower(t.Name()), c.requestName, queryBody)), nil
 }
 
-func handleStruct(s interface{}, tagname string) ([]byte, error) {
+func handleStruct(s interface{}, tagname string) (string, error) {
 	v := reflect.Indirect(reflect.ValueOf(s))
 	t := reflect.TypeOf(s)
 
 	t = t.Elem()
 
-	querySkeleton := `
-query {
-  %s%s {%s
-  }
-}`
-
-	args := ""
 	str := ""
 	for i := 0; i < v.NumField(); i++ {
 		ft := t.Field(i)
@@ -48,7 +52,7 @@ query {
 		tag := ft.Tag.Get(tagname)
 		spl := strings.Split(tag, ",")
 		if len(spl) != 2 {
-			return nil, errors.New("invalid separator count")
+			return "", errors.New("invalid separator count")
 		}
 
 		if spl[1] != "out" {
@@ -58,5 +62,5 @@ query {
 		str += "\n" + fmt.Sprintf(`%8s`, spl[0])
 	}
 
-	return []byte(fmt.Sprintf(querySkeleton, strings.ToLower(t.Name()), args, str)), nil
+	return str, nil
 }
