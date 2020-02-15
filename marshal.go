@@ -56,6 +56,7 @@ func handleStruct(s interface{}, tagname string, c *config) (string, error) {
 			}
 
 			c.SetType(gt)
+			continue
 		}
 
 		tag := ft.Tag.Get(tagname)
