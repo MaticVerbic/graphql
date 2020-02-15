@@ -8,21 +8,21 @@ import (
 	"github.com/pkg/errors"
 )
 
-type opt struct{ prefix, indent string }
+type config struct{ prefix, indent string }
 
-func (o opt) validate() error {
-	if o.indent != "" && !strings.ContainsAny(o.indent, " ") {
+func (c config) validate() error {
+	if c.indent != "" && !strings.ContainsAny(c.indent, " ") {
 		return errors.New("non whitespace char in 'indent' arg")
 	}
 
-	if o.prefix != "" && !strings.ContainsAny(o.prefix, " ") {
+	if c.prefix != "" && !strings.ContainsAny(c.prefix, " ") {
 		return errors.New("non whitespace char in 'prefix' arg")
 	}
 
 	return nil
 }
 
-func marshal(source interface{}, o opt) ([]byte, error) {
+func marshal(source interface{}, c config) ([]byte, error) {
 	if source == nil {
 		return nil, errors.New("source is nil interface")
 	}
