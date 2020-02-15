@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"graphql/graphql"
+	"graphql"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
