@@ -1,4 +1,4 @@
-module graphql
+module graphql-client
 
 go 1.13
 
