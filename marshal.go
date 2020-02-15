@@ -26,7 +26,7 @@ func marshal(source interface{}, c *config) ([]byte, error) {
 	var err error
 	switch t.Kind() {
 	case reflect.Struct:
-		queryBody, err = handleStruct(source, c.tagname)
+		queryBody, err = handleStruct(source, c.tagname, c)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to handle a struct")
 		}
@@ -36,20 +36,36 @@ func marshal(source interface{}, c *config) ([]byte, error) {
 		return nil, errors.New("invalid source type")
 	}
 
-	return []byte(fmt.Sprintf(querySkeleton, strings.ToLower(t.Name()), c.requestName, queryBody)), nil
+	return []byte(fmt.Sprintf(querySkeleton, c.typ, c.requestName, queryBody)), nil
 }
 
-func handleStruct(s interface{}, tagname string) (string, error) {
+func handleStruct(s interface{}, tagname string, c *config) (string, error) {
+	const gqlType = "GQLType"
+
 	v := reflect.Indirect(reflect.ValueOf(s))
 	t := reflect.TypeOf(s)
-
 	t = t.Elem()
 
 	str := ""
 	for i := 0; i < v.NumField(); i++ {
 		ft := t.Field(i)
+		if ft.Name == gqlType {
+			gt := Type(v.FieldByName(gqlType).String())
+			if !gt.isValid() {
+				return "", fmt.Errorf("invalid value for %q", gqlType)
+			}
+
+			c.SetType(gt)
+			continue
+		}
 
 		tag := ft.Tag.Get(tagname)
+
+		// @todo: better handling for empty tags.
+		if tag == "" {
+			continue
+		}
+
 		spl := strings.Split(tag, ",")
 		if len(spl) != 2 {
 			return "", errors.New("invalid separator count")
