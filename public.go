@@ -33,10 +33,6 @@ func NameFieldOpt(nameField string) Opt {
 
 // NewEncoder returns a new Encoder object.
 func NewEncoder(requestType Type, prefix, indent string, opts ...Opt) (*Encoder, error) {
-	const (
-		defaultTag = "gql"
-	)
-
 	if !requestType.isValid() {
 		return nil, errors.New("invalid request type")
 	}
