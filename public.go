@@ -4,9 +4,9 @@ import "github.com/pkg/errors"
 
 // MarshalIndent ...
 func MarshalIndent(source interface{}, prefix, indent string, opts ...Opt) ([]byte, error) {
-	c := newConfig(opts...)
-	if err := c.validate(); err != nil {
-		return nil, errors.Wrap(err, "failed to validate opt")
+	c, err := newConfig(prefix, indent, opts...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create new config")
 	}
 
 	return marshal(source, c) // @todo: marshalIndent.
@@ -14,5 +14,6 @@ func MarshalIndent(source interface{}, prefix, indent string, opts ...Opt) ([]by
 
 // Marshal ...
 func Marshal(source interface{}) ([]byte, error) {
-	return marshal(source, newConfig())
+	c, _ := newConfig("", "")
+	return marshal(source, c)
 }

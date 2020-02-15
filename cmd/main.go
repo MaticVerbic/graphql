@@ -10,8 +10,8 @@ import (
 
 // Foo ...
 type Foo struct {
-	Bar string `gql:"bar,out"`
-	Foo string `gql:"foo,out"`
+	Bar string `abc:"bar,out"`
+	Foo string `abc:"foo,out"`
 }
 
 func main() {

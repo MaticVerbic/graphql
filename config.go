@@ -18,24 +18,26 @@ func TagNameInject(tagname string) Opt {
 
 type config struct{ tagname, prefix, indent string }
 
-func newConfig(opts ...Opt) *config {
+func newConfig(prefix, indent string, opts ...Opt) (*config, error) {
 	const (
-		defaultPrefix = ""
-		defaultIndent = "  "
-		defaultTag    = "gql"
+		defaultTag = "gql"
 	)
 
 	c := &config{
 		tagname: defaultTag,
-		prefix:  defaultPrefix,
-		indent:  defaultIndent,
+		prefix:  prefix,
+		indent:  indent,
+	}
+
+	if err := c.validate(); err != nil {
+		return nil, err
 	}
 
 	for _, opt := range opts {
 		opt(c)
 	}
 
-	return c
+	return c, nil
 }
 
 func (c *config) validate() error {
