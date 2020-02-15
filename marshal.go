@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func marshal(source interface{}, c *config) ([]byte, error) {
+func (e *Encoder) marshal(source interface{}) ([]byte, error) {
 	if source == nil {
 		return nil, errors.New("source is nil interface")
 	}
@@ -16,17 +16,19 @@ func marshal(source interface{}, c *config) ([]byte, error) {
 	v := reflect.Indirect(reflect.ValueOf(source))
 	t := reflect.TypeOf(v)
 
-	querySkeleton := `
-%s {
+	querySkeleton := `%s {
   %s {%s
   }
 }`
 
 	var queryBody string
+	var queryName string
 	var err error
 	switch t.Kind() {
 	case reflect.Struct:
-		queryBody, err = handleStruct(source, c.tagname, c)
+		queryName = e.getName(source)
+
+		queryBody, err = e.handleStruct(source)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to handle a struct")
 		}
@@ -36,12 +38,10 @@ func marshal(source interface{}, c *config) ([]byte, error) {
 		return nil, errors.New("invalid source type")
 	}
 
-	return []byte(fmt.Sprintf(querySkeleton, c.typ, c.requestName, queryBody)), nil
+	return []byte(fmt.Sprintf(querySkeleton, e.config.requestType, queryName, queryBody)), nil
 }
 
-func handleStruct(s interface{}, tagname string, c *config) (string, error) {
-	const gqlType = "GQLType"
-
+func (e *Encoder) handleStruct(s interface{}) (string, error) {
 	v := reflect.Indirect(reflect.ValueOf(s))
 	t := reflect.TypeOf(s)
 	t = t.Elem()
@@ -49,17 +49,7 @@ func handleStruct(s interface{}, tagname string, c *config) (string, error) {
 	str := ""
 	for i := 0; i < v.NumField(); i++ {
 		ft := t.Field(i)
-		if ft.Name == gqlType {
-			gt := Type(v.FieldByName(gqlType).String())
-			if !gt.isValid() {
-				return "", fmt.Errorf("invalid value for %q", gqlType)
-			}
-
-			c.SetType(gt)
-			continue
-		}
-
-		tag := ft.Tag.Get(tagname)
+		tag := ft.Tag.Get(e.config.tagname)
 
 		// @todo: better handling for empty tags.
 		if tag == "" {
@@ -79,4 +69,17 @@ func handleStruct(s interface{}, tagname string, c *config) (string, error) {
 	}
 
 	return str, nil
+}
+
+func (e *Encoder) getName(s interface{}) string {
+	v := reflect.ValueOf(s).Elem()
+	gt := v.FieldByName(e.config.nameField)
+	if !gt.IsValid() && reflect.TypeOf(gt).Kind() != reflect.String {
+		s := reflect.TypeOf(s).Elem().Name()
+		return s
+	}
+
+	gtt := gt.Interface().(string)
+
+	return gtt
 }

@@ -6,45 +6,30 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Opt is an option func.
-type Opt func(c *config)
-
-// TagNameInject injects a custom tag
-func TagNameInject(tagname string) Opt {
-	return func(c *config) {
-		c.tagname = tagname
-	}
-}
-
 type config struct {
 	tagname     string
+	nameField   string
 	prefix      string
 	indent      string
-	requestName string
-	typ         Type
+	requestType Type
 }
 
-func (c *config) SetType(t Type) { c.typ = t }
-
-func newConfig(prefix, indent string, opts ...Opt) (*config, error) {
+func newConfig(requestType Type, prefix, indent string) (*config, error) {
 	const (
-		defaultTag         = "gql"
-		defaultRequestName = "queryObject"
+		defaultTag       = "gql"
+		defaultNameField = "GQLName"
 	)
 
 	c := &config{
 		tagname:     defaultTag,
+		nameField:   defaultNameField,
 		prefix:      prefix,
 		indent:      indent,
-		requestName: defaultRequestName,
+		requestType: requestType,
 	}
 
 	if err := c.validate(); err != nil {
 		return nil, err
-	}
-
-	for _, opt := range opts {
-		opt(c)
 	}
 
 	return c, nil
