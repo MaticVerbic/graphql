@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"graphql"
+	gql "graphql"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -10,17 +10,19 @@ import (
 
 // Foo ...
 type Foo struct {
-	Bar string `abc:"bar,out"`
-	Foo string `abc:"foo,out"`
+	GQLType gql.Type
+	Bar     string `abc:"bar,out"`
+	Foo     string `abc:"foo,out"`
 }
 
 func main() {
 	f := Foo{
-		Foo: "test_foo",
-		Bar: "test_bar",
+		GQLType: gql.TypeQuery(),
+		Foo:     "test_foo",
+		Bar:     "test_bar",
 	}
 
-	marshalled, err := graphql.MarshalIndent(&f, "", "", graphql.TagNameInject("abc"))
+	marshalled, err := gql.MarshalIndent(&f, "", "", gql.TagNameInject("abc"))
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to marshal gql"))
 	}

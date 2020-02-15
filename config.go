@@ -21,12 +21,15 @@ type config struct {
 	prefix      string
 	indent      string
 	requestName string
+	typ         Type
 }
+
+func (c *config) SetType(t Type) { c.typ = t }
 
 func newConfig(prefix, indent string, opts ...Opt) (*config, error) {
 	const (
 		defaultTag         = "gql"
-		defaultRequestName = "query"
+		defaultRequestName = "queryObject"
 	)
 
 	c := &config{
