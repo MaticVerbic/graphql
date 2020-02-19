@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -57,13 +56,12 @@ func NewEncoder(requestType Type, prefix, indent string, opts ...Opt) (*Encoder,
 func (e *Encoder) initLog() {
 	e.logger = logrus.New()
 	e.logger.SetLevel(logrus.InfoLevel)
-	e.logger.SetOutput(os.Stdout)
+	e.logger.SetOutput(ioutil.Discard)
 	e.logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02T15:04:05",
 	})
 
-	e.logger.SetOutput(ioutil.Discard)
 	e.log = logrus.NewEntry(e.logger)
 }
 
