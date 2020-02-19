@@ -37,7 +37,7 @@ func main() {
 
 	//b := bytes.NewBuffer(nil)
 
-	enc, err := gql.NewEncoder(gql.TypeQuery(), " ", "  ",
+	enc, err := gql.NewEncoder(gql.TypeQuery(), "", "  ",
 		gql.TagNameOpt("abc"),
 		gql.NameFieldOpt("NameField"),
 		//gql.OverrideWriterOpt(os.Stdout),
@@ -48,7 +48,7 @@ func main() {
 		panic(err)
 	}
 
-	enc.AddItem("", &f, &f)
+	enc.AddItem("", "snafu", &f, &f)
 
 	marshalled, err := enc.Marshal()
 	if err != nil {

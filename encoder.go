@@ -23,6 +23,7 @@ type Encoder struct {
 
 type encoderItem struct {
 	alias        string
+	queryName    string
 	outputSource interface{}
 	inputSource  interface{}
 }
@@ -67,9 +68,10 @@ func (e *Encoder) initLog() {
 }
 
 // AddItem ...
-func (e *Encoder) AddItem(alias string, variables interface{}, output interface{}) {
+func (e *Encoder) AddItem(alias, queryName string, variables interface{}, output interface{}) {
 	e.objects = append(e.objects, encoderItem{
 		alias:        alias,
+		queryName:    queryName,
 		inputSource:  variables,
 		outputSource: output,
 	})
@@ -101,32 +103,45 @@ func (e *Encoder) writeString(s string) error {
 }
 
 func (e *Encoder) writeOpenBracket() error {
-	err := e.writeString(e.config.inlineSpace + "{")
-	if err != nil {
-		return err
-	}
-
 	if e.config.indent != "" {
+		err := e.writeString(e.config.inlineSpace + "{")
+		if err != nil {
+			return err
+		}
+
 		err = e.writeString("\n")
 		if err != nil {
 			return err
 		}
+		return nil
+	}
+
+	err := e.writeString("{")
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (e *Encoder) writeCloseBracket(level int) error {
-	err := e.writeString(fmt.Sprintf("%s%s%s", e.config.prefix, e.getIndent(level), "}"))
-	if err != nil {
-		return err
-	}
-
 	if e.config.indent != "" {
+		err := e.writeString(fmt.Sprintf("%s%s%s", e.config.prefix, e.getIndent(level), "}"))
+		if err != nil {
+			return err
+		}
+
 		err = e.writeString("\n")
 		if err != nil {
 			return err
 		}
+
+		return nil
+	}
+
+	err := e.writeString("}")
+	if err != nil {
+		return err
 	}
 
 	return nil

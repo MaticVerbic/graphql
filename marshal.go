@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (e *Encoder) marshal(source interface{}) error {
+func (e *Encoder) marshal(source interface{}, name string) error {
 	if source == nil {
 		return errors.New("source is nil interface")
 	}
@@ -24,11 +24,20 @@ func (e *Encoder) marshal(source interface{}) error {
 		return err
 	}
 
-	switch t.Kind() {
-	case reflect.Struct:
+	if name != "" {
 		err = e.writeString(e.config.prefix + e.config.indent + e.getName(source))
 		if err != nil {
 			return err
+		}
+	}
+
+	switch t.Kind() {
+	case reflect.Struct:
+		if name == "" {
+			err = e.writeString(e.config.prefix + e.config.indent + e.getName(source))
+			if err != nil {
+				return err
+			}
 		}
 
 		err = e.writeOpenBracket()
@@ -65,6 +74,8 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 	t := reflect.TypeOf(s)
 	t = t.Elem()
 
+	inlineCount := 0
+
 	for i := 0; i < v.NumField(); i++ {
 		ft := t.Field(i)
 		tag := ft.Tag.Get(e.config.tagname)
@@ -78,12 +89,28 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 		switch ft.Type.Kind() {
 		case reflect.Struct:
 			// set up a new recursion level
-			err := e.writeString(e.config.prefix + e.getIndent(level) + tag)
-			if err != nil {
-				return err
+			if e.config.indent != "" {
+				err := e.writeString(e.config.prefix + e.getIndent(level) + tag)
+				if err != nil {
+					return err
+				}
+			} else {
+				if inlineCount > 0 {
+					err := e.writeString(e.config.inlineSpace)
+					if err != nil {
+						return err
+					}
+				}
+
+				err := e.writeString(tag)
+				if err != nil {
+					return err
+				}
+
+				inlineCount++
 			}
 
-			err = e.writeOpenBracket()
+			err := e.writeOpenBracket()
 			if err != nil {
 				return err
 			}
@@ -101,12 +128,29 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 			}
 
 			continue
-		}
+		case reflect.Map:
+			continue
+		default:
+			if e.config.indent != "" {
+				err := e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n")
+				if err != nil {
+					return err
+				}
+			} else {
+				if inlineCount > 0 {
+					err := e.writeString(e.config.inlineSpace)
+					if err != nil {
+						return err
+					}
+				}
 
-		// write a simple field name
-		err := e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n")
-		if err != nil {
-			return err
+				err := e.writeString(tag)
+				if err != nil {
+					return err
+				}
+
+				inlineCount++
+			}
 		}
 	}
 	return nil
@@ -115,12 +159,11 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 func (e *Encoder) getName(s interface{}) string {
 	v := reflect.ValueOf(s).Elem()
 	gt := v.FieldByName(e.config.nameField)
+
 	if !gt.IsValid() && reflect.TypeOf(gt).Kind() != reflect.String {
 		s := reflect.TypeOf(s).Elem().Name()
 		return s
 	}
 
-	gtt := gt.Interface().(string)
-
-	return gtt
+	return gt.Interface().(string)
 }
