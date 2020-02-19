@@ -68,7 +68,7 @@ func (e *Encoder) initLog() {
 }
 
 // AddItem ...
-func (e *Encoder) AddItem(alias, queryName string, variables interface{}, output interface{}) {
+func (e *Encoder) AddItem(queryName, alias string, variables interface{}, output interface{}) {
 	e.objects = append(e.objects, encoderItem{
 		alias:        alias,
 		queryName:    queryName,

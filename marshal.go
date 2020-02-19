@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (e *Encoder) marshal(source interface{}, name string) error {
+func (e *Encoder) marshal(source interface{}, name, alias string) error {
 	if source == nil {
 		return errors.New("source is nil interface")
 	}
@@ -24,33 +24,36 @@ func (e *Encoder) marshal(source interface{}, name string) error {
 		return err
 	}
 
-	if name != "" {
-		err = e.writeString(e.config.prefix + e.config.indent + e.getName(source))
-		if err != nil {
+	if name != "" || t.Kind() == reflect.Struct {
+		if err := e.writeString(e.config.prefix + e.config.indent); err != nil {
+			return err
+		}
+
+		if alias != "" {
+			if err := e.writeString(alias + ": "); err != nil {
+				return err
+			}
+		}
+
+		if name == "" {
+			err = e.writeString(e.getName(source))
+			if err != nil {
+				return err
+			}
+		} else {
+			if err := e.writeString(e.getName(source)); err != nil {
+				return err
+			}
+		}
+
+		if err := e.writeOpenBracket(); err != nil {
 			return err
 		}
 	}
 
 	switch t.Kind() {
 	case reflect.Struct:
-		if name == "" {
-			err = e.writeString(e.config.prefix + e.config.indent + e.getName(source))
-			if err != nil {
-				return err
-			}
-		}
-
-		err = e.writeOpenBracket()
-		if err != nil {
-			return err
-		}
-
 		err = e.handleStruct(source, 2)
-		if err != nil {
-			return err
-		}
-
-		err = e.writeCloseBracket(1)
 		if err != nil {
 			return err
 		}
@@ -59,6 +62,11 @@ func (e *Encoder) marshal(source interface{}, name string) error {
 		break
 	default:
 		return errors.New("invalid source type")
+	}
+
+	err = e.writeCloseBracket(1)
+	if err != nil {
+		return err
 	}
 
 	err = e.writeCloseBracket(0)
@@ -160,7 +168,8 @@ func (e *Encoder) getName(s interface{}) string {
 	v := reflect.ValueOf(s).Elem()
 	gt := v.FieldByName(e.config.nameField)
 
-	if !gt.IsValid() && reflect.TypeOf(gt).Kind() != reflect.String {
+	if (!gt.IsValid() && reflect.TypeOf(gt).Kind() != reflect.String) ||
+		gt.Interface().(string) == "" {
 		s := reflect.TypeOf(s).Elem().Name()
 		return s
 	}

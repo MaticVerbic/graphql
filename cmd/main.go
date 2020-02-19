@@ -48,7 +48,7 @@ func main() {
 		panic(err)
 	}
 
-	enc.AddItem("", "snafu", &f, &f)
+	enc.AddItem("", "", &f, &f)
 
 	marshalled, err := enc.Marshal()
 	if err != nil {

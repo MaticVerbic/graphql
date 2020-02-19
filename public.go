@@ -9,7 +9,7 @@ func (e *Encoder) Marshal() ([]byte, error) {
 		e.log.Warn("output writer does not implement Publisher interface, output will be nil")
 	}
 
-	err := e.marshal(e.objects[0].inputSource, e.objects[0].queryName)
+	err := e.marshal(e.objects[0].inputSource, e.objects[0].queryName, e.objects[0].alias)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal input")
 	}
