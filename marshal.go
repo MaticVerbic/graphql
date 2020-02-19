@@ -14,16 +14,37 @@ func (e *Encoder) marshal(source interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(source))
 	t := reflect.TypeOf(v)
 
-	e.writeString(e.config.prefix + e.config.requestType.String())
-	e.writeOpenBracket()
+	err := e.writeString(e.config.prefix + e.config.requestType.String())
+	if err != nil {
+		return err
+	}
+
+	err = e.writeOpenBracket()
+	if err != nil {
+		return err
+	}
+
 	switch t.Kind() {
 	case reflect.Struct:
-		e.writeString(e.config.prefix + e.config.indent + e.getName(source))
-		e.writeOpenBracket()
+		err := e.writeString(e.config.prefix + e.config.indent + e.getName(source))
+		if err != nil {
+			return err
+		}
 
-		e.handleStruct(source, 2)
+		err = e.writeOpenBracket()
+		if err != nil {
+			return err
+		}
 
-		e.writeCloseBracket(1)
+		err = e.handleStruct(source, 2)
+		if err != nil {
+			return err
+		}
+
+		err = e.writeCloseBracket(1)
+		if err != nil {
+			return err
+		}
 
 	case reflect.Map:
 		break
@@ -31,11 +52,15 @@ func (e *Encoder) marshal(source interface{}) error {
 		return errors.New("invalid source type")
 	}
 
-	e.writeCloseBracket(0)
+	err = e.writeCloseBracket(0)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (e *Encoder) handleStruct(s interface{}, level int) {
+func (e *Encoder) handleStruct(s interface{}, level int) error {
 	v := reflect.Indirect(reflect.ValueOf(s))
 	t := reflect.TypeOf(s)
 	t = t.Elem()
@@ -53,21 +78,38 @@ func (e *Encoder) handleStruct(s interface{}, level int) {
 		switch ft.Type.Kind() {
 		case reflect.Struct:
 			// set up a new recursion level
-			e.writeString(e.config.prefix + e.getIndent(level) + tag)
-			e.writeOpenBracket()
+			err := e.writeString(e.config.prefix + e.getIndent(level) + tag)
+			if err != nil {
+				return err
+			}
+
+			err = e.writeOpenBracket()
+			if err != nil {
+				return err
+			}
 
 			// recursively handle child structs
-			e.handleStruct(v.Field(i).Addr().Interface(), level+1)
+			err = e.handleStruct(v.Field(i).Addr().Interface(), level+1)
+			if err != nil {
+				return err
+			}
 
 			// close a new recursion level
-			e.writeCloseBracket(level)
+			err = e.writeCloseBracket(level)
+			if err != nil {
+				return err
+			}
+
 			continue
 		}
 
 		// write a simple field name
-		e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n")
+		err := e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n")
+		if err != nil {
+			return err
+		}
 	}
-
+	return nil
 }
 
 func (e *Encoder) getName(s interface{}) string {

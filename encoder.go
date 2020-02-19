@@ -100,18 +100,30 @@ func (e *Encoder) writeString(s string) error {
 	return nil
 }
 
-func (e *Encoder) writeOpenBracket() {
-	e.writeString(e.config.inlineSpace + "{")
+func (e *Encoder) writeOpenBracket() error {
+	err := e.writeString(e.config.inlineSpace + "{")
+	if err != nil {
+		return err
+	}
+
 	if e.config.indent != "" {
 		e.writeString("\n")
 	}
+
+	return nil
 }
 
-func (e *Encoder) writeCloseBracket(level int) {
-	e.writeString(fmt.Sprintf("%s%s%s", e.config.prefix, e.getIndent(level), "}"))
+func (e *Encoder) writeCloseBracket(level int) error {
+	err := e.writeString(fmt.Sprintf("%s%s%s", e.config.prefix, e.getIndent(level), "}"))
+	if err != nil {
+		return err
+	}
+
 	if e.config.indent != "" {
 		e.writeString("\n")
 	}
+
+	return nil
 }
 
 func (e *Encoder) getIndent(level int) string {
