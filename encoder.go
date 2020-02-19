@@ -107,7 +107,10 @@ func (e *Encoder) writeOpenBracket() error {
 	}
 
 	if e.config.indent != "" {
-		e.writeString("\n")
+		err = e.writeString("\n")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

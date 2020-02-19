@@ -26,7 +26,7 @@ func (e *Encoder) marshal(source interface{}) error {
 
 	switch t.Kind() {
 	case reflect.Struct:
-		err := e.writeString(e.config.prefix + e.config.indent + e.getName(source))
+		err = e.writeString(e.config.prefix + e.config.indent + e.getName(source))
 		if err != nil {
 			return err
 		}
