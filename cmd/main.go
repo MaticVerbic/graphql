@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	gql "graphql"
+	"time"
 )
 
 // Foo ...
@@ -36,7 +37,7 @@ func main() {
 	}
 
 	//b := bytes.NewBuffer(nil)
-
+	start := time.Now()
 	enc, err := gql.NewEncoder(gql.TypeQuery(), "", "  ",
 		gql.TagNameOpt("abc"),
 		gql.NameFieldOpt("NameField"),
@@ -54,7 +55,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
+	elapsed := time.Since(start).Nanoseconds()
 	//fmt.Println(b.String())
 	fmt.Println(string(marshalled))
+	fmt.Printf("elapsed: %dns", elapsed)
 }

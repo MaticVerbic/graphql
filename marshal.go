@@ -6,6 +6,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrGeneral is a general error returned by marshaler
+const ErrGeneral = "failed to marshal interface"
+
 func (e *Encoder) marshal(source interface{}, name, alias string) error {
 	if source == nil {
 		return errors.New("source is nil interface")
@@ -14,47 +17,44 @@ func (e *Encoder) marshal(source interface{}, name, alias string) error {
 	v := reflect.Indirect(reflect.ValueOf(source))
 	t := reflect.TypeOf(v)
 
-	err := e.writeString(e.config.prefix + e.config.requestType.String())
-	if err != nil {
-		return err
+	if err := e.writeString(e.config.prefix + e.config.requestType.String()); err != nil {
+		return errors.Wrap(err, "failed to marshal request type")
 	}
 
-	err = e.writeOpenBracket()
-	if err != nil {
-		return err
+	if err := e.writeOpenBracket(); err != nil {
+		return errors.Wrap(err, ErrGeneral)
 	}
 
 	if name != "" || t.Kind() == reflect.Struct {
-		if err = e.writeString(e.config.prefix + e.config.indent); err != nil {
-			return err
+		if err := e.writeString(e.config.prefix + e.config.indent); err != nil {
+			return errors.Wrap(err, "failed to marshal request name indentation")
 		}
 
 		if alias != "" {
-			if err = e.writeString(alias + ": "); err != nil {
-				return err
+			if err := e.writeString(alias + ": "); err != nil {
+				return errors.Wrapf(err, "failed to marshal alias %q", alias)
 			}
 		}
 
 		if name == "" {
-			if err = e.writeString(e.getName(source)); err != nil {
-				return err
+			if err := e.writeString(e.getName(source)); err != nil {
+				return errors.Wrapf(err, "failed to marshal name %q", e.getName(source))
 			}
 		} else {
-			if err = e.writeString(e.getName(source)); err != nil {
-				return err
+			if err := e.writeString(name); err != nil {
+				return errors.Wrapf(err, "failed to marshal name %q", name)
 			}
 		}
 
-		if err = e.writeOpenBracket(); err != nil {
-			return err
+		if err := e.writeOpenBracket(); err != nil {
+			return errors.Wrap(err, ErrGeneral)
 		}
 	}
 
 	switch t.Kind() {
 	case reflect.Struct:
-		err = e.handleStruct(source, 2)
-		if err != nil {
-			return err
+		if err := e.handleStruct(source, 2); err != nil {
+			return errors.Wrap(err, ErrGeneral)
 		}
 
 	case reflect.Map:
@@ -63,14 +63,12 @@ func (e *Encoder) marshal(source interface{}, name, alias string) error {
 		return errors.New("invalid source type")
 	}
 
-	err = e.writeCloseBracket(1)
-	if err != nil {
-		return err
+	if err := e.writeCloseBracket(1); err != nil {
+		return errors.Wrap(err, ErrGeneral)
 	}
 
-	err = e.writeCloseBracket(0)
-	if err != nil {
-		return err
+	if err := e.writeCloseBracket(0); err != nil {
+		return errors.Wrap(err, ErrGeneral)
 	}
 
 	return nil
@@ -97,41 +95,35 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 		case reflect.Struct:
 			// set up a new recursion level
 			if e.config.indent != "" {
-				err := e.writeString(e.config.prefix + e.getIndent(level) + tag)
-				if err != nil {
-					return err
+				if err := e.writeString(e.config.prefix + e.getIndent(level) + tag); err != nil {
+					return errors.Wrapf(err, "failed to handle struct %q", tag)
 				}
 			} else {
 				if inlineCount > 0 {
-					err := e.writeString(e.config.inlineSpace)
-					if err != nil {
-						return err
+					if err := e.writeString(e.config.inlineSpace); err != nil {
+						return errors.Wrap(err, ErrGeneral)
 					}
 				}
 
-				err := e.writeString(tag)
-				if err != nil {
-					return err
+				if err := e.writeString(tag); err != nil {
+					return errors.Wrapf(err, "failed to handle struct %q", tag)
 				}
 
 				inlineCount++
 			}
 
-			err := e.writeOpenBracket()
-			if err != nil {
-				return err
+			if err := e.writeOpenBracket(); err != nil {
+				return errors.Wrap(err, ErrGeneral)
 			}
 
 			// recursively handle child structs
-			err = e.handleStruct(v.Field(i).Addr().Interface(), level+1)
-			if err != nil {
-				return err
+			if err := e.handleStruct(v.Field(i).Addr().Interface(), level+1); err != nil {
+				return errors.Wrapf(err, "failed to handle struct %q", tag)
 			}
 
 			// close a new recursion level
-			err = e.writeCloseBracket(level)
-			if err != nil {
-				return err
+			if err := e.writeCloseBracket(level); err != nil {
+				return errors.Wrap(err, ErrGeneral)
 			}
 
 			continue
@@ -139,21 +131,18 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 			continue
 		default:
 			if e.config.indent != "" {
-				err := e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n")
-				if err != nil {
-					return err
+				if err := e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n"); err != nil {
+					return errors.Wrapf(err, "failed to write field name %q", tag)
 				}
 			} else {
 				if inlineCount > 0 {
-					err := e.writeString(e.config.inlineSpace)
-					if err != nil {
-						return err
+					if err := e.writeString(e.config.inlineSpace); err != nil {
+						return errors.Wrap(err, ErrGeneral)
 					}
 				}
 
-				err := e.writeString(tag)
-				if err != nil {
-					return err
+				if err := e.writeString(tag); err != nil {
+					return errors.Wrapf(err, "failed to write field name %q", tag)
 				}
 
 				inlineCount++
