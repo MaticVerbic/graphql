@@ -25,28 +25,27 @@ func (e *Encoder) marshal(source interface{}, name, alias string) error {
 	}
 
 	if name != "" || t.Kind() == reflect.Struct {
-		if err := e.writeString(e.config.prefix + e.config.indent); err != nil {
+		if err = e.writeString(e.config.prefix + e.config.indent); err != nil {
 			return err
 		}
 
 		if alias != "" {
-			if err := e.writeString(alias + ": "); err != nil {
+			if err = e.writeString(alias + ": "); err != nil {
 				return err
 			}
 		}
 
 		if name == "" {
-			err = e.writeString(e.getName(source))
-			if err != nil {
+			if err = e.writeString(e.getName(source)); err != nil {
 				return err
 			}
 		} else {
-			if err := e.writeString(e.getName(source)); err != nil {
+			if err = e.writeString(e.getName(source)); err != nil {
 				return err
 			}
 		}
 
-		if err := e.writeOpenBracket(); err != nil {
+		if err = e.writeOpenBracket(); err != nil {
 			return err
 		}
 	}
