@@ -123,7 +123,10 @@ func (e *Encoder) writeCloseBracket(level int) error {
 	}
 
 	if e.config.indent != "" {
-		e.writeString("\n")
+		err = e.writeString("\n")
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
