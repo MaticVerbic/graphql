@@ -9,6 +9,7 @@ import (
 type config struct {
 	tagname     string
 	nameField   string
+	inlineSpace string
 	prefix      string
 	indent      string
 	requestType Type
@@ -23,6 +24,7 @@ func newConfig(requestType Type, prefix, indent string) (*config, error) {
 	c := &config{
 		tagname:     defaultTag,
 		nameField:   defaultNameField,
+		inlineSpace: " ",
 		prefix:      prefix,
 		indent:      indent,
 		requestType: requestType,

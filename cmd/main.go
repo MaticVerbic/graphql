@@ -8,20 +8,41 @@ import (
 // Foo ...
 type Foo struct {
 	NameField string
-	Bar       string `abc:"bar,out"`
-	Foo       string `abc:"foo,out"`
+	Foo       string `abc:"foo"`
+	Bar       Bar    `abc:"bar"`
+}
+
+// Bar ...
+type Bar struct {
+	Fb  string `abc:"fb"`
+	Baz Baz    `abc:"baz"`
+}
+
+// Baz ...
+type Baz struct {
+	Foobar string `abc:"foobar"`
 }
 
 func main() {
 	f := Foo{
 		NameField: "test",
 		Foo:       "test_foo",
-		Bar:       "test_bar",
+		Bar: Bar{
+			Fb: "fb",
+			Baz: Baz{
+				Foobar: "foobar",
+			},
+		},
 	}
 
-	enc, err := gql.NewEncoder(gql.TypeQuery(), "", "  ",
+	//b := bytes.NewBuffer(nil)
+
+	enc, err := gql.NewEncoder(gql.TypeQuery(), " ", "  ",
 		gql.TagNameOpt("abc"),
 		gql.NameFieldOpt("NameField"),
+		//gql.OverrideWriterOpt(os.Stdout),
+		//gql.LogLevelOpt(logrus.DebugLevel),
+		//gql.LogOutputOpt(os.Stdout),
 	)
 	if err != nil {
 		panic(err)
@@ -29,12 +50,11 @@ func main() {
 
 	enc.AddItem("", &f, &f)
 
-	marshalled, err := enc.MarshalIndent()
+	marshalled, err := enc.Marshal()
 	if err != nil {
 		panic(err)
 	}
 
+	//fmt.Println(b.String())
 	fmt.Println(string(marshalled))
-
-	//fmt.Println(string(marshalled))
 }

@@ -1,52 +1,45 @@
 package graphql
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 )
 
-func (e *Encoder) marshal(source interface{}) ([]byte, error) {
+func (e *Encoder) marshal(source interface{}) error {
 	if source == nil {
-		return nil, errors.New("source is nil interface")
+		return errors.New("source is nil interface")
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(source))
 	t := reflect.TypeOf(v)
 
-	querySkeleton := `%s {
-  %s {%s
-  }
-}`
-
-	var queryBody string
-	var queryName string
-	var err error
+	e.writeString(e.config.prefix + e.config.requestType.String())
+	e.writeOpenBracket()
 	switch t.Kind() {
 	case reflect.Struct:
-		queryName = e.getName(source)
+		e.writeString(e.config.prefix + e.config.indent + e.getName(source))
+		e.writeOpenBracket()
 
-		queryBody, err = e.handleStruct(source)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to handle a struct")
-		}
+		e.handleStruct(source, 2)
+
+		e.writeCloseBracket(1)
+
 	case reflect.Map:
 		break
 	default:
-		return nil, errors.New("invalid source type")
+		return errors.New("invalid source type")
 	}
 
-	return []byte(fmt.Sprintf(querySkeleton, e.config.requestType, queryName, queryBody)), nil
+	e.writeCloseBracket(0)
+	return nil
 }
 
-func (e *Encoder) handleStruct(s interface{}) (string, error) {
+func (e *Encoder) handleStruct(s interface{}, level int) {
 	v := reflect.Indirect(reflect.ValueOf(s))
 	t := reflect.TypeOf(s)
 	t = t.Elem()
 
-	str := ""
 	for i := 0; i < v.NumField(); i++ {
 		ft := t.Field(i)
 		tag := ft.Tag.Get(e.config.tagname)
@@ -56,19 +49,25 @@ func (e *Encoder) handleStruct(s interface{}) (string, error) {
 			continue
 		}
 
-		spl := strings.Split(tag, ",")
-		if len(spl) != 2 {
-			return "", errors.New("invalid separator count")
-		}
+		// custom handling of structs, maps and arrays
+		switch ft.Type.Kind() {
+		case reflect.Struct:
+			// set up a new recursion level
+			e.writeString(e.config.prefix + e.getIndent(level) + tag)
+			e.writeOpenBracket()
 
-		if spl[1] != "out" {
+			// recursively handle child structs
+			e.handleStruct(v.Field(i).Addr().Interface(), level+1)
+
+			// close a new recursion level
+			e.writeCloseBracket(level)
 			continue
 		}
 
-		str += "\n" + fmt.Sprintf(`%8s`, spl[0])
+		// write a simple field name
+		e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n")
 	}
 
-	return str, nil
 }
 
 func (e *Encoder) getName(s interface{}) string {
