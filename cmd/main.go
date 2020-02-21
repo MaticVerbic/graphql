@@ -55,8 +55,20 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = enc.Reset()
+	if err != nil {
+		panic(err)
+	}
+
+	query, err := enc.Query()
+	if err != nil {
+		panic(err)
+	}
+
 	elapsed := time.Since(start).Nanoseconds()
 	//fmt.Println(b.String())
-	fmt.Println(string(marshalled))
+	fmt.Println("http.Request ready: \n" + string(marshalled))
+	fmt.Println("\nclient ready: \n" + string(query))
 	fmt.Printf("elapsed: %dns", elapsed)
 }
