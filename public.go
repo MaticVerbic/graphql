@@ -17,10 +17,10 @@ type Output struct {
 // Reset resets the default buffer for reusability.
 func (e *Encoder) Reset() error {
 	if _, ok := e.buf.(*bytes.Buffer); !ok {
-		return errors.New("overrider io.Writer cannot be reset")
+		return errors.New("overridden io.Writer cannot be reset")
 	}
 
-	e.buf = bytes.NewBufferString("")
+	e.buf = bytes.NewBuffer(nil)
 	return nil
 }
 
@@ -29,6 +29,10 @@ func (e *Encoder) Marshal() ([]byte, error) {
 	p, ok := e.buf.(Publisher)
 	if !ok {
 		return nil, errors.New("method not compatible with overridden io.Writer")
+	}
+
+	if len(e.objects) == 0 {
+		return nil, errors.New("no items provided")
 	}
 
 	err := e.marshal(e.objects[0].inputSource, e.objects[0].queryName, e.objects[0].alias)
@@ -54,6 +58,10 @@ func (e *Encoder) Query() ([]byte, error) {
 	p, ok := e.buf.(Publisher)
 	if !ok {
 		return nil, errors.New("method not compatible with overridden io.Writer")
+	}
+
+	if len(e.objects) == 0 {
+		return nil, errors.New("no items provided")
 	}
 
 	err := e.marshal(e.objects[0].inputSource, e.objects[0].queryName, e.objects[0].alias)
