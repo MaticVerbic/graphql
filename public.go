@@ -35,7 +35,7 @@ func (e *Encoder) Marshal() ([]byte, error) {
 		return nil, errors.New("no items provided")
 	}
 
-	err := e.marshal(e.objects[0].inputSource, e.objects[0].queryName, e.objects[0].alias)
+	err := e.marshal(e.objects[0].outputSource, e.objects[0].queryName, e.objects[0].alias)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal input")
 	}
@@ -64,7 +64,7 @@ func (e *Encoder) Query() ([]byte, error) {
 		return nil, errors.New("no items provided")
 	}
 
-	err := e.marshal(e.objects[0].inputSource, e.objects[0].queryName, e.objects[0].alias)
+	err := e.marshal(e.objects[0].outputSource, e.objects[0].queryName, e.objects[0].alias)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal input")
 	}

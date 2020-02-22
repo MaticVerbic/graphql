@@ -11,6 +11,7 @@ type Foo struct {
 	NameField string
 	Foo       string `abc:"foo"`
 	Bar       Bar    `abc:"bar"`
+	Map       map[string]interface{}
 }
 
 // Bar ...
@@ -34,16 +35,22 @@ func main() {
 				Foobar: "foobar",
 			},
 		},
+		Map: map[string]interface{}{"testS": "testSV"},
 	}
 
-	//b := bytes.NewBuffer(nil)
+	m := map[string]interface{}{
+		"struct":       &f,
+		"sliceString":  &[]string{"foo", "bar", "baz"},
+		"stringSingle": "foobar",
+		"sliceEmpty":   []string{},
+		"stringEmpty":  "",
+		"map":          map[string]interface{}{"someKey": "someValue"},
+	}
+
 	start := time.Now()
 	enc, err := gql.NewEncoder(gql.TypeQuery(), "", "  ",
 		gql.TagNameOpt("abc"),
 		gql.NameFieldOpt("NameField"),
-		//gql.OverrideWriterOpt(os.Stdout),
-		//gql.LogLevelOpt(logrus.DebugLevel),
-		//gql.LogOutputOpt(os.Stdout),
 	)
 	if err != nil {
 		panic(err)
@@ -66,9 +73,38 @@ func main() {
 		panic(err)
 	}
 
-	elapsed := time.Since(start).Nanoseconds()
+	enc, err = gql.NewEncoder(gql.TypeQuery(), "", "  ",
+		gql.TagNameOpt("abc"),
+		//gql.OverrideWriterOpt(os.Stdout),
+		//gql.LogLevelOpt(logrus.DebugLevel),
+		//gql.LogOutputOpt(os.Stdout),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	enc.AddItem("testName", "", &m, &m)
+
+	marshalledTwo, err := enc.Marshal()
+	if err != nil {
+		panic(err)
+	}
+
+	err = enc.Reset()
+	if err != nil {
+		panic(err)
+	}
+
+	queryTwo, err := enc.Query()
+	if err != nil {
+		panic(err)
+	}
+
+	elapsed := time.Since(start).Microseconds()
 	//fmt.Println(b.String())
 	fmt.Println("http.Request ready: \n" + string(marshalled))
 	fmt.Println("\nclient ready: \n" + string(query))
-	fmt.Printf("elapsed: %dns", elapsed)
+	fmt.Println("http.Request ready: \n" + string(marshalledTwo))
+	fmt.Println("\nclient ready: \n" + string(queryTwo))
+	fmt.Printf("elapsed: %dms", elapsed)
 }

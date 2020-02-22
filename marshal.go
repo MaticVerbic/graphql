@@ -15,7 +15,7 @@ func (e *Encoder) marshal(source interface{}, name, alias string) error {
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(source))
-	t := reflect.TypeOf(v)
+	t := reflect.TypeOf(v.Interface())
 
 	if err := e.writeString(e.config.prefix + e.config.requestType.String()); err != nil {
 		return errors.Wrap(err, "failed to marshal request type")
@@ -35,8 +35,7 @@ func (e *Encoder) marshal(source interface{}, name, alias string) error {
 				return errors.Wrapf(err, "failed to marshal alias %q", alias)
 			}
 		}
-
-		if name == "" {
+		if name == "" && t.Kind() == reflect.Struct {
 			if err := e.writeString(e.getName(source)); err != nil {
 				return errors.Wrapf(err, "failed to marshal name %q", e.getName(source))
 			}
@@ -58,7 +57,9 @@ func (e *Encoder) marshal(source interface{}, name, alias string) error {
 		}
 
 	case reflect.Map:
-		break
+		if err := e.handleMap(source, 2); err != nil {
+			return errors.Wrap(err, ErrGeneral)
+		}
 	default:
 		return errors.New("invalid source type")
 	}
@@ -69,6 +70,94 @@ func (e *Encoder) marshal(source interface{}, name, alias string) error {
 
 	if err := e.writeCloseBracket(0); err != nil {
 		return errors.Wrap(err, ErrGeneral)
+	}
+
+	return nil
+}
+
+func (e *Encoder) handleMap(m interface{}, level int) error {
+	var ma map[string]interface{}
+	if ca, ok := m.(*map[string]interface{}); ok {
+		ma = *ca
+	} else if ca, ok := m.(map[string]interface{}); ok {
+		ma = ca
+	} else {
+		return errors.New("invalid map type")
+	}
+
+	var err error
+	for key, value := range ma {
+		v := reflect.Indirect(reflect.ValueOf(value))
+		inlineCount := 0
+
+		switch v.Kind() {
+		case reflect.Interface, reflect.Ptr:
+			if v.IsNil() {
+				inlineCount, err = e.writeItem(inlineCount, level, key)
+				if err != nil {
+					return err
+				}
+				continue
+			}
+		case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+			if v.Len() == 0 {
+				inlineCount, err = e.writeItem(inlineCount, level, key)
+				if err != nil {
+					return err
+				}
+				continue
+			}
+		}
+
+		switch v.Kind() {
+		case reflect.String:
+			if err := e.writeObjectHeader(level, key); err != nil {
+				return err
+			}
+
+			inlineCount, err = e.writeItem(inlineCount, level+1, value.(string))
+			if err != nil {
+				return err
+			}
+
+			if err := e.writeCloseBracket(level); err != nil {
+				return err
+			}
+		case reflect.Slice:
+			if err := e.writeObjectHeader(level, key); err != nil {
+				return err
+			}
+
+			for _, item := range v.Interface().([]string) {
+				inlineCount, err = e.writeItem(inlineCount, level+1, item)
+				if err != nil {
+					return err
+				}
+			}
+
+			if err := e.writeCloseBracket(level); err != nil {
+				return err
+			}
+		case reflect.Struct:
+
+			if err := e.writeObjectHeader(level, key); err != nil {
+				return err
+			}
+
+			if err := e.handleStruct(value, level+1); err != nil {
+				return err
+			}
+
+			if err := e.writeCloseBracket(level); err != nil {
+				return err
+			}
+		case reflect.Map:
+			if err := e.handleMap(value, level+1); err != nil {
+				return err
+			}
+		default:
+			continue
+		}
 	}
 
 	return nil
@@ -128,7 +217,9 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 
 			continue
 		case reflect.Map:
-			continue
+			if err := e.handleMap(v.Field(i).Addr().Interface(), level+1); err != nil {
+				return err
+			}
 		default:
 			if e.config.indent != "" {
 				if err := e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n"); err != nil {

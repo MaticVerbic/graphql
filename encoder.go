@@ -153,3 +153,35 @@ func (e *Encoder) getIndent(level int) string {
 
 	return s
 }
+
+func (e *Encoder) writeItem(inlineCount, level int, item string) (int, error) {
+	if e.config.indent != "" {
+		if err := e.writeString(e.config.prefix + e.getIndent(level) + item + "\n"); err != nil {
+			return 0, errors.Wrapf(err, "failed to write field name %q", item)
+		}
+		return inlineCount, nil
+	}
+
+	if inlineCount > 0 {
+		if err := e.writeString(e.config.inlineSpace); err != nil {
+			return 0, errors.Wrap(err, ErrGeneral)
+		}
+	}
+
+	if err := e.writeString(item); err != nil {
+		return 0, errors.Wrapf(err, "failed to write field name %q", item)
+	}
+
+	return inlineCount + 1, nil
+}
+
+func (e *Encoder) writeObjectHeader(level int, item string) error {
+	if err := e.writeString(e.config.prefix + e.getIndent(level) + item); err != nil {
+		return errors.Wrapf(err, "failed to write field name %q", item)
+	}
+
+	if err := e.writeOpenBracket(); err != nil {
+		return err
+	}
+	return nil
+}
