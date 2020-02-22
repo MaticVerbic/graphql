@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"reflect"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -25,6 +26,36 @@ type encoderItem struct {
 	queryName    string
 	outputSource interface{}
 	inputSource  interface{}
+}
+
+func (ei *encoderItem) validate(e *Encoder) error {
+	if err := ei.parseQueryName(e); err != nil {
+		return errors.Wrap(err, "failed to parse queryName")
+	}
+
+	return nil
+}
+
+func (ei *encoderItem) parseQueryName(e *Encoder) error {
+	if ei.queryName != "" {
+		return nil
+	}
+
+	v := reflect.Indirect(reflect.ValueOf(ei.inputSource))
+	fmt.Println(v.Kind())
+	if v.Kind() == reflect.Struct {
+		if qn := v.FieldByName(e.config.nameField); qn.IsValid() &&
+			reflect.ValueOf(qn.Interface()).Kind() == reflect.String &&
+			reflect.ValueOf(qn.Interface()).Len() != 0 {
+			ei.queryName = qn.Interface().(string)
+			return nil
+		}
+
+		ei.queryName = v.Type().Name()
+		return nil
+	}
+
+	return errors.New("invalid query name input provided")
 }
 
 // NewEncoder returns a new Encoder object.
@@ -66,13 +97,20 @@ func (e *Encoder) initLog() {
 }
 
 // AddItem ...
-func (e *Encoder) AddItem(queryName, alias string, variables interface{}, output interface{}) {
-	e.objects = append(e.objects, encoderItem{
+func (e *Encoder) AddItem(queryName, alias string, variables interface{}, output interface{}) error {
+	ei := encoderItem{
 		alias:        alias,
 		queryName:    queryName,
 		inputSource:  variables,
 		outputSource: output,
-	})
+	}
+
+	if err := ei.validate(e); err != nil {
+		return errors.Wrap(err, "input item failed validation")
+	}
+
+	e.objects = append(e.objects, ei)
+	return nil
 }
 
 // GetWriter returns the writer.

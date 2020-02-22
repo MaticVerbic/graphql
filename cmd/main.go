@@ -56,7 +56,9 @@ func main() {
 		panic(err)
 	}
 
-	enc.AddItem("", "", &f, &f)
+	if err := enc.AddItem("testNamedQuery", "", &f, &f); err != nil {
+		panic(err)
+	}
 
 	marshalled, err := enc.Marshal()
 	if err != nil {
@@ -83,7 +85,9 @@ func main() {
 		panic(err)
 	}
 
-	enc.AddItem("testName", "", &m, &m)
+	if err := enc.AddItem("queryNameTest", "", &m, &m); err != nil {
+		panic(err)
+	}
 
 	marshalledTwo, err := enc.Marshal()
 	if err != nil {

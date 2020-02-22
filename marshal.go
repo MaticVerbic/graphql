@@ -17,37 +17,12 @@ func (e *Encoder) marshal(source interface{}, name, alias string) error {
 	v := reflect.Indirect(reflect.ValueOf(source))
 	t := reflect.TypeOf(v.Interface())
 
-	if err := e.writeString(e.config.prefix + e.config.requestType.String()); err != nil {
-		return errors.Wrap(err, "failed to marshal request type")
+	if err := e.writeObjectHeader(0, e.config.requestType.String()); err != nil {
+		return errors.Wrap(err, "failed to write object header")
 	}
 
-	if err := e.writeOpenBracket(); err != nil {
-		return errors.Wrap(err, ErrGeneral)
-	}
-
-	if name != "" || t.Kind() == reflect.Struct {
-		if err := e.writeString(e.config.prefix + e.config.indent); err != nil {
-			return errors.Wrap(err, "failed to marshal request name indentation")
-		}
-
-		if alias != "" {
-			if err := e.writeString(alias + ": "); err != nil {
-				return errors.Wrapf(err, "failed to marshal alias %q", alias)
-			}
-		}
-		if name == "" && t.Kind() == reflect.Struct {
-			if err := e.writeString(e.getName(source)); err != nil {
-				return errors.Wrapf(err, "failed to marshal name %q", e.getName(source))
-			}
-		} else {
-			if err := e.writeString(name); err != nil {
-				return errors.Wrapf(err, "failed to marshal name %q", name)
-			}
-		}
-
-		if err := e.writeOpenBracket(); err != nil {
-			return errors.Wrap(err, ErrGeneral)
-		}
+	if err := e.writeObjectHeader(1, name); err != nil {
+		return errors.Wrap(err, "failed to write object header")
 	}
 
 	switch t.Kind() {
