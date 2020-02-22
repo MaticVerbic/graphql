@@ -111,7 +111,7 @@ func (e *Encoder) handleMap(m interface{}, level int) error {
 
 		switch v.Kind() {
 		case reflect.String:
-			if err := e.writeObjectHeader(level, key); err != nil {
+			if err = e.writeObjectHeader(level, key); err != nil {
 				return err
 			}
 
@@ -120,11 +120,11 @@ func (e *Encoder) handleMap(m interface{}, level int) error {
 				return err
 			}
 
-			if err := e.writeCloseBracket(level); err != nil {
+			if err = e.writeCloseBracket(level); err != nil {
 				return err
 			}
 		case reflect.Slice:
-			if err := e.writeObjectHeader(level, key); err != nil {
+			if err = e.writeObjectHeader(level, key); err != nil {
 				return err
 			}
 
@@ -139,20 +139,19 @@ func (e *Encoder) handleMap(m interface{}, level int) error {
 				return err
 			}
 		case reflect.Struct:
-
-			if err := e.writeObjectHeader(level, key); err != nil {
+			if err = e.writeObjectHeader(level, key); err != nil {
 				return err
 			}
 
-			if err := e.handleStruct(value, level+1); err != nil {
+			if err = e.handleStruct(value, level+1); err != nil {
 				return err
 			}
 
-			if err := e.writeCloseBracket(level); err != nil {
+			if err = e.writeCloseBracket(level); err != nil {
 				return err
 			}
 		case reflect.Map:
-			if err := e.handleMap(value, level+1); err != nil {
+			if err = e.handleMap(value, level+1); err != nil {
 				return err
 			}
 		default:
