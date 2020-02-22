@@ -86,9 +86,10 @@ func (e *Encoder) handleMap(m interface{}, level int) error {
 	}
 
 	var err error
+	var inlineCount int
 	for key, value := range ma {
 		v := reflect.Indirect(reflect.ValueOf(value))
-		inlineCount := 0
+		inlineCount = 0
 
 		switch v.Kind() {
 		case reflect.Interface, reflect.Ptr:
