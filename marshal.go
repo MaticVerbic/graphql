@@ -92,52 +92,47 @@ func (e *Encoder) handleMap(m interface{}, level int) error {
 		inlineCount = 0
 
 		switch v.Kind() {
-		case reflect.Interface, reflect.Ptr:
-			if v.IsNil() {
-				inlineCount, err = e.writeItem(inlineCount, level, key)
-				if err != nil {
-					return err
-				}
-				continue
-			}
-		case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
-			if v.Len() == 0 {
-				inlineCount, err = e.writeItem(inlineCount, level, key)
-				if err != nil {
-					return err
-				}
-				continue
-			}
-		}
-
-		switch v.Kind() {
 		case reflect.String:
-			if err = e.writeObjectHeader(level, key); err != nil {
-				return err
-			}
+			if isValid(v) {
+				if err = e.writeObjectHeader(level, key); err != nil {
+					return err
+				}
 
-			inlineCount, err = e.writeItem(inlineCount, level+1, value.(string))
-			if err != nil {
-				return err
-			}
+				inlineCount, err = e.writeItem(inlineCount, level+1, value.(string))
+				if err != nil {
+					return err
+				}
 
-			if err = e.writeCloseBracket(level); err != nil {
-				return err
+				if err = e.writeCloseBracket(level); err != nil {
+					return err
+				}
+			} else {
+				inlineCount, err = e.writeItem(inlineCount, level, key)
+				if err != nil {
+					return err
+				}
 			}
 		case reflect.Slice:
-			if err = e.writeObjectHeader(level, key); err != nil {
-				return err
-			}
+			if isValid(v) {
+				if err = e.writeObjectHeader(level, key); err != nil {
+					return err
+				}
 
-			for _, item := range v.Interface().([]string) {
-				inlineCount, err = e.writeItem(inlineCount, level+1, item)
+				for _, item := range v.Interface().([]string) {
+					inlineCount, err = e.writeItem(inlineCount, level+1, item)
+					if err != nil {
+						return err
+					}
+				}
+
+				if err = e.writeCloseBracket(level); err != nil {
+					return err
+				}
+			} else {
+				inlineCount, err = e.writeItem(inlineCount, level, key)
 				if err != nil {
 					return err
 				}
-			}
-
-			if err = e.writeCloseBracket(level); err != nil {
-				return err
 			}
 		case reflect.Struct:
 			if err = e.writeObjectHeader(level, key); err != nil {
@@ -152,8 +147,23 @@ func (e *Encoder) handleMap(m interface{}, level int) error {
 				return err
 			}
 		case reflect.Map:
-			if err = e.handleMap(value, level+1); err != nil {
-				return err
+			if isValid(v) {
+				if err = e.writeObjectHeader(level, key); err != nil {
+					return err
+				}
+
+				if err = e.handleMap(value, level+1); err != nil {
+					return err
+				}
+
+				if err = e.writeCloseBracket(level); err != nil {
+					return err
+				}
+			} else {
+				inlineCount, err = e.writeItem(inlineCount, level, key)
+				if err != nil {
+					return err
+				}
 			}
 		default:
 			continue
@@ -165,12 +175,11 @@ func (e *Encoder) handleMap(m interface{}, level int) error {
 
 func (e *Encoder) handleStruct(s interface{}, level int) error {
 	v := reflect.Indirect(reflect.ValueOf(s))
-	t := reflect.TypeOf(s)
-	t = t.Elem()
+	t := reflect.TypeOf(v.Interface())
 
 	inlineCount := 0
-
 	for i := 0; i < v.NumField(); i++ {
+		fv := reflect.Indirect(reflect.ValueOf(v.Field(i).Interface()))
 		ft := t.Field(i)
 		tag := ft.Tag.Get(e.config.tagname)
 
@@ -180,7 +189,7 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 		}
 
 		// custom handling of structs, maps and arrays
-		switch ft.Type.Kind() {
+		switch v.Field(i).Kind() {
 		case reflect.Struct:
 			// set up a new recursion level
 			if e.config.indent != "" {
@@ -206,7 +215,7 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 			}
 
 			// recursively handle child structs
-			if err := e.handleStruct(v.Field(i).Addr().Interface(), level+1); err != nil {
+			if err := e.handleStruct(fv.Interface(), level+1); err != nil {
 				return errors.Wrapf(err, "failed to handle struct %q", tag)
 			}
 
@@ -217,8 +226,18 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 
 			continue
 		case reflect.Map:
-			if err := e.handleMap(v.Field(i).Addr().Interface(), level+1); err != nil {
-				return err
+			if isValid(v.Field(i)) {
+				if err := e.writeObjectHeader(level, tag); err != nil {
+					return err
+				}
+
+				if err := e.handleMap(v.Field(i).Interface(), level+1); err != nil {
+					return err
+				}
+
+				if err := e.writeCloseBracket(level); err != nil {
+					return err
+				}
 			}
 		default:
 			if e.config.indent != "" {
@@ -254,4 +273,19 @@ func (e *Encoder) getName(s interface{}) string {
 	}
 
 	return gt.Interface().(string)
+}
+
+func isValid(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Interface, reflect.Ptr:
+		if !v.IsNil() {
+			return true
+		}
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		if !(v.Len() == 0) {
+			return true
+		}
+	}
+
+	return false
 }

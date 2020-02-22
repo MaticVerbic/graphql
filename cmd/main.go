@@ -9,9 +9,9 @@ import (
 // Foo ...
 type Foo struct {
 	NameField string
-	Foo       string `abc:"foo"`
-	Bar       Bar    `abc:"bar"`
-	Map       map[string]interface{}
+	Foo       string                 `abc:"foo"`
+	Bar       Bar                    `abc:"bar"`
+	Map       map[string]interface{} `abc:"map"`
 }
 
 // Bar ...
@@ -35,7 +35,7 @@ func main() {
 				Foobar: "foobar",
 			},
 		},
-		Map: map[string]interface{}{"testS": "testSV"},
+		Map: map[string]interface{}{"someKey": "someValue"},
 	}
 
 	m := map[string]interface{}{
