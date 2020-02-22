@@ -136,7 +136,7 @@ func (e *Encoder) handleMap(m interface{}, level int) error {
 				}
 			}
 
-			if err := e.writeCloseBracket(level); err != nil {
+			if err = e.writeCloseBracket(level); err != nil {
 				return err
 			}
 		case reflect.Struct:
