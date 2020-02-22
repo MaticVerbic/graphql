@@ -177,6 +177,7 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 	v := reflect.Indirect(reflect.ValueOf(s))
 	t := reflect.TypeOf(v.Interface())
 
+	var err error
 	inlineCount := 0
 	for i := 0; i < v.NumField(); i++ {
 		fv := reflect.Indirect(reflect.ValueOf(v.Field(i).Interface()))
@@ -192,70 +193,39 @@ func (e *Encoder) handleStruct(s interface{}, level int) error {
 		switch v.Field(i).Kind() {
 		case reflect.Struct:
 			// set up a new recursion level
-			if e.config.indent != "" {
-				if err := e.writeString(e.config.prefix + e.getIndent(level) + tag); err != nil {
-					return errors.Wrapf(err, "failed to handle struct %q", tag)
-				}
-			} else {
-				if inlineCount > 0 {
-					if err := e.writeString(e.config.inlineSpace); err != nil {
-						return errors.Wrap(err, ErrGeneral)
-					}
-				}
-
-				if err := e.writeString(tag); err != nil {
-					return errors.Wrapf(err, "failed to handle struct %q", tag)
-				}
-
-				inlineCount++
-			}
-
-			if err := e.writeOpenBracket(); err != nil {
+			if err = e.writeObjectHeader(level, tag); err != nil {
 				return errors.Wrap(err, ErrGeneral)
 			}
 
 			// recursively handle child structs
-			if err := e.handleStruct(fv.Interface(), level+1); err != nil {
+			if err = e.handleStruct(fv.Interface(), level+1); err != nil {
 				return errors.Wrapf(err, "failed to handle struct %q", tag)
 			}
 
 			// close a new recursion level
-			if err := e.writeCloseBracket(level); err != nil {
+			if err = e.writeCloseBracket(level); err != nil {
 				return errors.Wrap(err, ErrGeneral)
 			}
 
 			continue
 		case reflect.Map:
 			if isValid(v.Field(i)) {
-				if err := e.writeObjectHeader(level, tag); err != nil {
+				if err = e.writeObjectHeader(level, tag); err != nil {
 					return err
 				}
 
-				if err := e.handleMap(v.Field(i).Interface(), level+1); err != nil {
+				if err = e.handleMap(v.Field(i).Interface(), level+1); err != nil {
 					return err
 				}
 
-				if err := e.writeCloseBracket(level); err != nil {
+				if err = e.writeCloseBracket(level); err != nil {
 					return err
 				}
 			}
 		default:
-			if e.config.indent != "" {
-				if err := e.writeString(e.config.prefix + e.getIndent(level) + tag + "\n"); err != nil {
-					return errors.Wrapf(err, "failed to write field name %q", tag)
-				}
-			} else {
-				if inlineCount > 0 {
-					if err := e.writeString(e.config.inlineSpace); err != nil {
-						return errors.Wrap(err, ErrGeneral)
-					}
-				}
-
-				if err := e.writeString(tag); err != nil {
-					return errors.Wrapf(err, "failed to write field name %q", tag)
-				}
-
-				inlineCount++
+			inlineCount, err = e.writeItem(inlineCount, level, tag)
+			if err != nil {
+				return err
 			}
 		}
 	}
